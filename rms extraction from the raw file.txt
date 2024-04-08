@@ -4,6 +4,7 @@ contact : pedro.smonaco@gmail.com
 
 about the code:
 
+for the base type S1_E2_A1...S2_E2_A1 etc.  
 Iteration over all files in the specified directory (folder).
 Loading files with a ".mat" extension using the loadmat function of the scipy.io module.
 Extracting specific data from the loaded .mat files, in particular the stimulus and emg variables.
