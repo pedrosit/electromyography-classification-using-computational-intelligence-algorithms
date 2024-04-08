@@ -1,0 +1,153 @@
+"""
+Pedro Sito Monaco from the https://www.ufrgs.br/ieelab/
+contact : pedro.smonaco@gmail.com
+
+about the code:
+
+Iteration over all files in the specified directory (folder).
+Loading files with a ".mat" extension using the loadmat function of the scipy.io module.
+Extracting specific data from the loaded .mat files, in particular the stimulus and emg variables.
+Processing the emg data to calculate the square root of the mean squares (RMS) of certain channels, considering signal windows specified by mov.
+Organizing the results in a pandas DataFrame.
+Normalization of the DataFrame values so that each column is between 0 and 1.
+Concatenation of all the resulting DataFrames from different files into a single data structure.
+Exporting the concatenated DataFrame to an Excel file.
+"""
+
+import numpy as np
+import pandas as pd
+import os
+from scipy.io import loadmat
+import scipy.io
+
+## creates a new empty list called ll which will then become the excel file of rms values
+
+ll=[]
+
+## path to the folder of the raw electromyography signal files of the ninapro protocol
+
+pasta = 'C:/Users/Acer/Documents/bitter/UFRGS/IEE-IA Lab/codes/final/Referencias'
+
+# takes all the .mat files in the folder, which is the format of the raw electromyography files
+
+for arquivo in os.listdir(pasta):
+    if arquivo.endswith('.mat'):
+        
+        ## loads the .mat file
+        
+        mat = loadmat(os.path.join(pasta, arquivo))
+        
+        arq=[]
+        
+        ## choosing the values we want to use to calculate the rms of the raw files
+
+        mov1= mat['stimulus']  ## only for signal windowing
+        emg= mat['emg']
+
+        tabelas=[]
+        
+        ## signal windowing to calculate only emg values at muscle stimulation
+
+        for i in range(0,12):
+            canal01 = abs(emg[:,i])
+            
+            canal1=np.append(canal01, 1)
+
+            mov=np.append(mov1, 0)
+
+            for i in range(len(canal1)):
+                if mov[i] == 0:
+                    canal1[i] = 1    
+                      
+            matrizini = []
+
+            matrifina = []
+            
+            ## finds the values where the movement interval begins and ends
+
+            for p in range(len(canal1)):
+                
+                    if (canal1[p] != 1) and (canal1[p-1] == 1 ):          
+                         
+                        matrizini.append(p)
+                        
+            for p in range(len(canal1)):
+               
+                    if (canal1[p] ==1 ) and (canal1[p-1] !=1):
+                        
+                        matrifina.append(p)
+                        
+            rmss=[]
+            
+            hh = len(matrizini)
+            
+            ## calculates the rms within the ranges found in the previous lines             
+                                         
+            for i in range(0,hh):
+                rms = []
+                n = canal1[matrizini[i]:matrifina[i]]
+                soma = 0
+
+                q=0
+
+                for i in range(len(n)):
+                      soma += ((n[i])**2)          
+                      
+                q = (soma / len(n))           
+                        
+                        
+                root = np.sqrt(q)
+              
+                rms.append(root)
+                
+                rmss.append(rms) 
+                
+                canal=pd.DataFrame(rmss, columns=['Canal'])
+            
+            arq.append(canal)
+            
+        # 138 rows by 12 columns
+        # the six repetitions are one below the other
+        # the twelve columns are each channel of a file
+        # so we can consider each repetition as a new movement
+            
+        data1 = pd.concat(arq, axis=1)
+        
+        dfmaxscaled = data1.copy() 
+        for column in dfmaxscaled.columns: 
+            dfmaxscaled[column] = dfmaxscaled[column]  / dfmaxscaled[column].abs().max() 
+        
+        yy=np.concatenate([([i]*6) for i in [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]], axis=0)
+        
+        
+        dfmaxscaled['movimento'] = yy
+        
+        ll.append( dfmaxscaled)
+        
+dfconcat = pd.concat(ll)  
+
+## generate an excel table with the rms values of each movement made by the volunteer of the rms signal
+
+dfconcat.to_excel('opa3.xlsx', index=False)
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
